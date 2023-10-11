@@ -1,0 +1,45 @@
+---
+- hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    
+    - name: Uninstall old docker version
+      ansible.builtin.apt:
+        name: ['docker', 'docker-engine', 'docker.io', 'containered', 'runc']
+        state: absent
+
+    - name: Set up the repository for Docker
+      ansible.builtin.apt:
+        name: [
+          'apt-transport-https',
+          'ca-certificates',
+          'curl',
+          'debian-archive-keyring',
+          'gnupg',
+          'lsb-release',
+        ]
+        state: present
+        update_cache: true
+
+    - name: Add Dockers official GPG key
+      ansible.builtin.apt_key:
+        url: 'https://download.docker.com/linux/debian/gpg'
+        keyring: '/usr/share/keyrings/docker-archive-keyring.gpg'
+
+    - name: Set up the stable Docker repository
+      ansible.builtin.apt_repository:
+        repo: 'deb [arch=armhf signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian {{ ansible_lsb.codename }} stable'
+
+    - name: Install Docker Engine & Compose
+      ansible.builtin.apt:
+        name: ['docker-ce', 'docker-ce-cli', 'containerd.io', 'docker-compose']
+        state: present
+
+    - name: Configure docker logging
+      ansible.builtin.template:
+        src: "daemon.json"
+        dest: "/etc/docker/daemon.json"
+        mode: "0644"
+      notify: restart docker

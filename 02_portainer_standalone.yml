@@ -1,0 +1,24 @@
+---
+- hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+
+    - name: Create docker-compose.yml from template
+      ansible.builtin.template:
+        src: templates/docker-compose.yml.j2
+        dest: /opt/docker-compose.yml
+        mode: 0644
+
+    - name: Remove old portainer stack
+      ansible.builtin.docker_compose:
+        project_src: /opt
+        remove_images: all
+        remove_volumes: true
+        state: absent
+
+    - name: Create and start portainer stack
+      ansible.builtin.docker_compose:
+        project_src: /opt
+        recreate: always
